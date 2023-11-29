@@ -15,7 +15,7 @@ import { getStatusEvents } from "../track/selector"
 import { ITrackMute } from "../trackMute/ITrackMute"
 import { DistributiveOmit } from "../types"
 import EventScheduler from "./EventScheduler"
-import { convertTrackEvents, PlayerEvent } from "./PlayerEvent"
+import { PlayerEvent, convertTrackEvents } from "./PlayerEvent"
 
 export interface LoopSetting {
   begin: number
@@ -175,7 +175,7 @@ export default class Player {
     const noteNumber = beat.beat === 0 ? 76 : 77
     return [
       {
-        ...noteOnMidiEvent(0, 9, noteNumber, velocity),
+        ...noteOnMidiEvent(0, 9, noteNumber, velocity, []),
         tick: beat.tick,
         trackId: METRONOME_TRACK_ID,
       },
@@ -235,7 +235,7 @@ export default class Player {
     delayTime = 0,
   ) {
     this._output.activate()
-    this.sendEvent(noteOnMidiEvent(0, channel, noteNumber, velocity), delayTime)
+    this.sendEvent(noteOnMidiEvent(0, channel, noteNumber, velocity, []), delayTime)
   }
 
   stopNote(
@@ -248,7 +248,7 @@ export default class Player {
     },
     delayTime = 0,
   ) {
-    this.sendEvent(noteOffMidiEvent(0, channel, noteNumber, 0), delayTime)
+    this.sendEvent(noteOffMidiEvent(0, channel, noteNumber, [], 0), delayTime)
   }
 
   // delayTime: seconds, timestampNow: milliseconds

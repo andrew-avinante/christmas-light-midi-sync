@@ -1,4 +1,5 @@
 import {
+  applyGroup,
   copySelection,
   deleteSelection,
   duplicateSelection,
@@ -8,7 +9,7 @@ import {
   selectAllNotes,
   selectNextNote,
   selectPreviousNote,
-  transposeSelection,
+  transposeSelection
 } from "../../actions"
 import RootStore from "../../stores/RootStore"
 import { Action } from "./KeyboardShortcut"
@@ -51,6 +52,13 @@ export const pianoNotesKeyboardShortcutActions = (
   {
     code: "KeyT",
     run: () => (rootStore.pianoRollStore.openTransposeDialog = true),
+  },{
+    code: "KeyE",
+    run: () => (rootStore.pianoRollStore.openLightsChannelDialog = true)
+  },
+  {
+    code: "KeyG",
+    run: () => applyGroup(rootStore)(),
   },
   { code: "Delete", run: () => deleteSelection(rootStore)() },
   {

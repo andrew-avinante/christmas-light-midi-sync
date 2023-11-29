@@ -3,12 +3,25 @@ import { partition } from "lodash"
 import { observer } from "mobx-react-lite"
 import { FC } from "react"
 import { trackColorToCSSColor } from "../../../../common/track/TrackColor"
-import { colorToVec4 } from "../../../gl/color"
+import { averageColor, colorToVec4 } from "../../../gl/color"
 import { useStores } from "../../../hooks/useStores"
 import { useTheme } from "../../../hooks/useTheme"
 import { PianoNoteItem } from "../../../stores/PianoRollStore"
 import { NoteCircles } from "./NoteCircles"
 import { NoteRectangles } from "./NoteRectangles"
+
+const CHANNELS = [
+  "#57b403",
+  "#104fa0",
+  "#ecde2c",
+  "#91edb1",
+  "#a43583",
+  "#9309fd",
+  "#bf853e",
+  "#6fd0e8",
+  "#FFBF00",
+  "#F5200B"
+]
 
 export const Notes: FC<{ zIndex: number }> = observer(({ zIndex }) => {
   const {
@@ -34,7 +47,9 @@ export const Notes: FC<{ zIndex: number }> = observer(({ zIndex }) => {
     ...item,
     color: item.isSelected
       ? selectedColor
-      : colorToVec4(baseColor.mix(backgroundColor, 1 - item.velocity / 127)),
+      : item.lightChannels.length ? averageColor(item.lightChannels.map(index => CHANNELS[index]))
+      :
+      colorToVec4(baseColor.mix(backgroundColor, 1 - item.velocity / 127)),
   })
 
   return (

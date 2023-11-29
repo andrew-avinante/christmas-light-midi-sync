@@ -5,11 +5,12 @@ import { clamp } from "lodash"
 import { observer } from "mobx-react-lite"
 import { FC, useCallback, useEffect, useRef } from "react"
 import {
-  containsPoint,
   IPoint,
+  containsPoint,
   pointAdd,
   pointSub,
 } from "../../../common/geometry"
+import { Layout, WHEEL_SCROLL_RATE } from "../../Constants"
 import {
   arrangeEndSelection,
   arrangeMoveSelection,
@@ -17,20 +18,19 @@ import {
   arrangeStartSelection,
   selectTrack,
 } from "../../actions"
-import { Layout, WHEEL_SCROLL_RATE } from "../../Constants"
 import { getClientPos } from "../../helpers/mouseEvent"
 import { observeDrag } from "../../helpers/observeDrag"
 import { isTouchPadEvent } from "../../helpers/touchpad"
 import { useContextMenu } from "../../hooks/useContextMenu"
 import { useStores } from "../../hooks/useStores"
 import { useTheme } from "../../hooks/useTheme"
+import CanvasPianoRuler from "../PianoRoll/CanvasPianoRuler"
+import { TrackName } from "../TrackList/TrackName"
 import {
   HorizontalScaleScrollBar,
   VerticalScaleScrollBar,
 } from "../inputs/ScaleScrollBar"
 import { BAR_WIDTH } from "../inputs/ScrollBar"
-import CanvasPianoRuler from "../PianoRoll/CanvasPianoRuler"
-import { TrackName } from "../TrackList/TrackName"
 import { ArrangeContextMenu } from "./ArrangeContextMenu"
 import { ArrangeTrackContextMenu } from "./ArrangeTrackContextMenu"
 import { ArrangeViewCanvas } from "./ArrangeViewCanvas/ArrangeViewCanvas"

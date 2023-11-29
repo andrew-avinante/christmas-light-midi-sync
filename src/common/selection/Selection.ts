@@ -31,7 +31,6 @@ export const movedSelection = (
   dn: number,
 ): Selection => {
   const s = cloneDeep(selection)
-
   s.from.tick += dt
   s.to.tick += dt
   s.from.noteNumber += dn

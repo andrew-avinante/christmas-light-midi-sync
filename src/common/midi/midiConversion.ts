@@ -4,13 +4,16 @@ import {
   AnyEvent,
   EndOfTrackEvent,
   MidiFile,
-  read,
+  NoteOffEvent,
+  NoteOnEvent,
+  SetTempoEvent,
   StreamSource,
+  read,
   write as writeMidiFile,
 } from "midifile-ts"
 import { toJS } from "mobx"
-import { isNotNull } from "../helpers/array"
 import { downloadBlob } from "../helpers/Downloader"
+import { isNotNull } from "../helpers/array"
 import { addDeltaTime, toRawEvents } from "../helpers/toRawEvents"
 import {
   addTick,
@@ -19,6 +22,24 @@ import {
 } from "../helpers/toTrackEvents"
 import Song from "../song"
 import Track, { AnyEventFeature } from "../track"
+import { createCommand } from "./Command"
+
+interface Times {
+  [key: string]: number;
+}
+
+const CHANNELS = [
+  "garage",
+  "top-right",
+  "bottom-right",
+  "col-1",
+  "col-2",
+  "col-3",
+  "window",
+  "outline",
+  "garden",
+  "tree"
+]
 
 const trackFromMidiEvents = (events: AnyEvent[]): Track => {
   const track = new Track()
@@ -27,6 +48,7 @@ const trackFromMidiEvents = (events: AnyEvent[]): Track => {
   if (channel !== undefined) {
     track.channel = channel
   }
+  
   track.addEvents(toTrackEvents(events))
 
   return track
@@ -50,6 +72,7 @@ const tracksFromFormat0Events = (events: AnyEvent[]): Track[] => {
       tracks.push(track)
     }
     const track = tracks[ch]
+
     const trackEvents = tickedEventsToTrackEvents(events)
     track.addEvents(trackEvents)
   }
@@ -114,6 +137,10 @@ const getTracks = (midi: MidiFile): Track[] => {
   }
 }
 
+const applyLights = (event: AnyEvent) => {
+  // console.log(event)
+}
+
 export function songFromMidi(data: StreamSource) {
   const song = new Song()
   const midi = read(data)
@@ -165,6 +192,137 @@ export function songToMidi(song: Song) {
 
 export function downloadSongAsMidi(song: Song) {
   const bytes = songToMidi(song)
+  songToLights(song)
   const blob = new Blob([bytes], { type: "application/octet-stream" })
   downloadBlob(blob, song.filepath.length > 0 ? song.filepath : "no name.mid")
+}
+
+export function songToLights(song: Song) {
+  const rawTracks = songToMidiEvents(song);
+  let commands = [];
+  const tempo = rawTracks[0].filter(e => {
+    return "subtype" in e && e.subtype === "setTempo"
+  })[0] as SetTempoEvent;
+
+  const bpm = 60_000_000 / tempo.microsecondsPerBeat;
+  const sPerTick = 60000 / (bpm * song.timebase) / 1000;
+
+  let currentCommand = createCommand();
+
+  const notes = rectifyEvents(rawTracks);
+  for(let i = 0; i < notes.length; i++) {
+    let event;
+    const note = notes[i]
+    let isNoteOn = false;
+
+    if ("subtype" in note && note.subtype == "noteOn") {
+      event = note as NoteOnEvent;
+      isNoteOn = true;
+    } else {
+      event = note as NoteOffEvent;
+    }
+
+    if(event.deltaTime != 0) {
+      if (Object.keys(currentCommand.changes).length === 0) {
+        currentCommand.increaseTimeout(event.deltaTime * sPerTick)
+      } else {
+        commands.push(currentCommand)
+        currentCommand = createCommand(event.deltaTime * sPerTick)
+      }
+    }
+
+    for(let i = 0; i < event.lightChannels.length; i++) {
+      currentCommand.setChannel(CHANNELS[event.lightChannels[i]], isNoteOn ? 1 : 0, event.deltaTime, event)
+    }
+
+  }
+
+  commands.push(currentCommand);
+
+  let result = []
+
+  for(let i = 0; i < commands.length; i++) {
+    result.push({
+      "changes": Object.fromEntries(
+        Object.entries(commands[i].changes).map(([key, value]) => [key, value.pinValue])
+      ),
+      "timeout": commands[i].timeout,
+      "raw": commands[i].changes
+    })
+  }
+
+  console.log(result);
+}
+
+function rectifyEvents(rawTracks: AnyEvent[][]): AnyEvent[]{
+  let allNoteEvents = [];
+  for(let i = 0; i < rawTracks.length; i++) {
+    const noteEvents = getNoteEvents(rawTracks[i]);
+    if (noteEvents.length) {
+      allNoteEvents.push(noteEvents);
+    }
+  }
+  
+  const times: Times = {};
+  for (let i = 0; i < allNoteEvents.length; i ++) {
+      times[i] = 0;
+  }
+  let overallTime = 0
+  let isDone = false;
+  let result = [];
+
+  while(!isDone) {
+    const currentItems: AnyEvent[] = new Array(allNoteEvents.length).fill(null);
+    let smallestVal: number | null = null;
+    let smallestIndex = -1;
+
+    for (let i = 0; i < allNoteEvents.length; i++) {
+      const item = allNoteEvents[i];
+      if (item.length > 0) {
+        currentItems[i] = item[0];
+      }
+    }
+
+    for (let i = 0; i < currentItems.length; i++) {
+      const item = currentItems[i];
+      if (item !== null) {
+          const time = item.deltaTime + times[i];
+          if (smallestVal === null || (item && time < smallestVal)) {
+              smallestVal = time;
+              smallestIndex = i;
+          }
+      }
+    }
+
+    if (smallestIndex !== -1) {
+      const smallest = allNoteEvents[smallestIndex].shift()!;
+      times[smallestIndex] += smallest.deltaTime;
+      const deltaTime = times[smallestIndex] - overallTime;
+      overallTime += deltaTime;
+      smallest.deltaTime = deltaTime;
+
+      if ("subtype" in smallest) {
+        if (smallest.subtype == "noteOn" || smallest.subtype == "noteOff") {
+          result.push(smallest);
+        }
+      }
+    } else {
+        isDone = true;
+    }
+  }
+
+  return result;
+}
+
+function getNoteEvents(events :AnyEvent[]): AnyEvent[] {
+  let deltaEvents: AnyEvent[] = [];
+
+  for(let i = 0; i < events.length; i ++) {
+    const e = events[i];
+    if ("deltaTime" in e) {
+      deltaEvents.push(e)
+    }
+  }
+
+  return deltaEvents;
 }

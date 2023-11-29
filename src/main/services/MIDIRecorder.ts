@@ -82,6 +82,8 @@ export class MIDIRecorder {
           velocity: message.velocity,
           duration: 0,
           isRecording: true,
+          lightChannels: [],
+          groupId: -1
         })
         this.recordedNotes.push(note)
         break

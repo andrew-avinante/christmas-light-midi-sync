@@ -28,6 +28,8 @@ export type PianoNoteItem = IRect & {
   isSelected: boolean
   isDrum: boolean
   trackId: number
+  lightChannels: number[]
+  groupId: number
 }
 
 export default class PianoRollStore {
@@ -61,6 +63,7 @@ export default class PianoRollStore {
   showTrackList = false
   showEventList = false
   openTransposeDialog = false
+  openLightsChannelDialog = false
 
   constructor(readonly rootStore: RootStore) {
     this.rulerStore = new RulerStore(this)
@@ -87,6 +90,7 @@ export default class PianoRollStore {
       showTrackList: observable,
       showEventList: observable,
       openTransposeDialog: observable,
+      openLightsChannelDialog: observable,
       contentWidth: computed,
       contentHeight: computed,
       scrollLeft: computed,
@@ -271,6 +275,8 @@ export default class PianoRollStore {
         isSelected,
         isDrum: isRhythmTrack,
         trackId: selectedTrackId,
+        lightChannels: e.lightChannels,
+        groupId: e.groupId,
       }
     })
   }
@@ -310,6 +316,8 @@ export default class PianoRollStore {
             isSelected: false,
             isDrum: track.isRhythmTrack,
             trackId: id,
+            lightChannels: e.lightChannels,
+            groupId: e.groupId,
           }
         })
       }),

@@ -27,6 +27,8 @@ type NoteEventContent = {
   duration: number
   noteNumber: number
   velocity: number
+  lightChannels: number[]
+  groupId: number
 }
 
 export type NoteEvent = TrackEventOf<NoteEventContent>

@@ -1,4 +1,4 @@
-import { songFromMidi, songToMidi } from "../../common/midi/midiConversion"
+import { songFromMidi, songToLights, songToMidi } from "../../common/midi/midiConversion"
 import { writeFile } from "../services/fs-helper"
 import RootStore from "../stores/RootStore"
 import { setSong } from "./song"
@@ -20,7 +20,7 @@ export const openFile = async (rootStore: RootStore) => {
         types: [
           {
             description: "MIDI file",
-            accept: { "audio/midi": [".mid"] },
+            accept: { "audio/midi": [".mid", ".midi"] },
           },
         ],
       })
@@ -60,6 +60,7 @@ export const saveFile = async (rootStore: RootStore) => {
   }
 
   const data = songToMidi(rootStore.song).buffer
+  songToLights(rootStore.song);
   try {
     await writeFile(fileHandle, data)
   } catch (e) {
@@ -75,7 +76,7 @@ export const saveFileAs = async ({ song }: RootStore) => {
       types: [
         {
           description: "MIDI file",
-          accept: { "audio/midi": [".mid"] },
+          accept: { "audio/midi": [".mid", ".midi"] },
         },
       ],
     })
@@ -89,6 +90,7 @@ export const saveFileAs = async ({ song }: RootStore) => {
     return
   }
   try {
+    songToLights(song);
     const data = songToMidi(song).buffer
     await writeFile(fileHandle, data)
     song.fileHandle = fileHandle

@@ -36,6 +36,8 @@ describe("SongFile", () => {
       tick: 960,
       velocity: 127,
       duration: 240,
+      lightChannels: [],
+      groupId: -1
     })
     song.tracks.forEach(reassignIDs)
     const bytes = songToMidi(song)
@@ -104,12 +106,12 @@ describe("SongFile", () => {
     it("should not create the conductor track", () => {
       const tracks: AnyEvent[][] = [
         [timeSignatureMidiEvent(0, 4, 4), setTempoMidiEvent(120, 500000)],
-        [noteOnMidiEvent(0, 1, 60, 100), noteOffMidiEvent(120, 1, 60, 0)],
+        [noteOnMidiEvent(0, 1, 60, 100, []), noteOffMidiEvent(120, 1, 60, [], 0)],
       ]
       const result = createConductorTrackIfNeeded(tracks)
       expect(result).toStrictEqual([
         [timeSignatureMidiEvent(0, 4, 4), setTempoMidiEvent(120, 500000)],
-        [noteOnMidiEvent(0, 1, 60, 100), noteOffMidiEvent(120, 1, 60, 0)],
+        [noteOnMidiEvent(0, 1, 60, 100, []), noteOffMidiEvent(120, 1, 60, [], 0)],
       ])
     })
     it("should create the conductor track", () => {
@@ -117,16 +119,16 @@ describe("SongFile", () => {
         [
           timeSignatureMidiEvent(0, 4, 4),
           setTempoMidiEvent(120, 500000),
-          noteOnMidiEvent(120, 5, 60, 100),
-          noteOffMidiEvent(120, 5, 60, 0),
+          noteOnMidiEvent(120, 5, 60, 100, []),
+          noteOffMidiEvent(120, 5, 60, [], 0),
         ],
-        [noteOnMidiEvent(0, 2, 60, 100), noteOffMidiEvent(120, 2, 60, 0)],
+        [noteOnMidiEvent(0, 2, 60, 100, []), noteOffMidiEvent(120, 2, 60, [], 0)],
       ]
       const result = createConductorTrackIfNeeded(tracks)
       expect(result).toStrictEqual([
         [timeSignatureMidiEvent(0, 4, 4), setTempoMidiEvent(120, 500000)],
-        [noteOnMidiEvent(240, 5, 60, 100), noteOffMidiEvent(120, 5, 60, 0)],
-        [noteOnMidiEvent(0, 2, 60, 100), noteOffMidiEvent(120, 2, 60, 0)],
+        [noteOnMidiEvent(240, 5, 60, 100, []), noteOffMidiEvent(120, 5, 60, [], 0)],
+        [noteOnMidiEvent(0, 2, 60, 100, []), noteOffMidiEvent(120, 2, 60, [], 0)],
       ])
     })
   })

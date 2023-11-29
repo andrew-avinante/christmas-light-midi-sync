@@ -133,10 +133,90 @@ export const transposeNotes =
             }
             return {
               id,
-              noteNumber: clampNoteNumber(n.noteNumber + deltaPitch),
+              noteNumber: clampNoteNumber(n.noteNumber + deltaPitch)
             }
           })
           .filter(isNotNull),
       )
+    }
+  }
+
+  export const changelightChannels =
+  ({ song }: RootStore) =>
+  (
+    channels: number[],
+    selectedEventIds: {
+      [key: number]: number[] // trackId: eventId
+    },
+  ) => {
+    for (const trackIdStr in selectedEventIds) {
+      const trackId = parseInt(trackIdStr)
+      const eventIds = selectedEventIds[trackId]
+      const track = song.getTrack(trackId)
+      if (track === undefined) {
+        continue
+      }
+      track.updateEvents(
+        eventIds
+          .map((id) => {
+            const n = track.getEventById(id)
+            if (n == undefined || !isNoteEvent(n)) {
+              return null
+            }
+            return {
+              id,
+              lightChannels: channels
+            }
+          })
+          .filter(isNotNull),
+      )
+    }
+  }
+
+  export const changeGroup =
+  ({ song }: RootStore) =>
+  (
+    selectedEventIds: {
+      [key: number]: number[] // trackId: eventId
+    },
+  ) => {
+    for (const trackIdStr in selectedEventIds) {
+      const trackId = parseInt(trackIdStr)
+      const eventIds = selectedEventIds[trackId]
+      const track = song.getTrack(trackId)
+      const groupId = track?.getNewGroupId()
+      if (track === undefined) {
+        continue
+      }
+      track.updateEvents(
+        eventIds
+          .map((id) => {
+            const n = track.getEventById(id)
+            if (n == undefined || !isNoteEvent(n)) {
+              return null
+            }
+            return {
+              id,
+              groupId: groupId
+            }
+          })
+          .filter(isNotNull),
+      )
+      if(groupId !== undefined) {
+        const groups = track.applyGroup(groupId);
+        const original = track.getGroupByGroupId(groupId);
+
+        for(let i = 0; i < original.length; i ++) {
+          for(let j = 0; j < groups.length; j++) {
+            const e = groups[j][i];
+            const o = original[i];
+            if (isNoteEvent(e) && isNoteEvent(o)) {
+              e.lightChannels = o.lightChannels;
+            }
+            groups[j][i] = e;
+          }
+        }
+
+      }
     }
   }

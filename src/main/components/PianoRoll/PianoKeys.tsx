@@ -166,7 +166,6 @@ const PianoKeys: FC<PianoKeysProps> = ({ numberOfKeys, keyHeight }) => {
       function pixelsToNoteNumber(y: number): number {
         return numberOfKeys - y / keyHeight
       }
-
       const startPosition = {
         x: e.nativeEvent.offsetX,
         y: e.nativeEvent.offsetY,
@@ -178,7 +177,7 @@ const PianoKeys: FC<PianoKeysProps> = ({ numberOfKeys, keyHeight }) => {
       const channel = selectedTrack?.channel ?? 0
 
       let prevNoteNumber = Math.floor(pixelsToNoteNumber(startPosition.y))
-      player.sendEvent(noteOnMidiEvent(0, channel, prevNoteNumber, 127))
+      player.sendEvent(noteOnMidiEvent(0, channel, prevNoteNumber, 127, []))
 
       setTouchingKeys([prevNoteNumber])
 
@@ -190,14 +189,14 @@ const PianoKeys: FC<PianoKeysProps> = ({ numberOfKeys, keyHeight }) => {
           }
           const noteNumber = Math.floor(pixelsToNoteNumber(pos.y))
           if (noteNumber !== prevNoteNumber) {
-            player.sendEvent(noteOffMidiEvent(0, channel, prevNoteNumber, 0))
-            player.sendEvent(noteOnMidiEvent(0, channel, noteNumber, 127))
+            player.sendEvent(noteOffMidiEvent(0, channel, prevNoteNumber, [], 0))
+            player.sendEvent(noteOnMidiEvent(0, channel, noteNumber, 127, []))
             prevNoteNumber = noteNumber
             setTouchingKeys([noteNumber])
           }
         },
         onMouseUp(_) {
-          player.sendEvent(noteOffMidiEvent(0, channel, prevNoteNumber, 0))
+          player.sendEvent(noteOffMidiEvent(0, channel, prevNoteNumber, [], 0))
           setTouchingKeys([])
         },
       })
@@ -210,7 +209,6 @@ const PianoKeys: FC<PianoKeysProps> = ({ numberOfKeys, keyHeight }) => {
       draw={draw}
       width={width}
       height={keyHeight * numberOfKeys}
-      onMouseDown={onMouseDown}
     />
   )
 }

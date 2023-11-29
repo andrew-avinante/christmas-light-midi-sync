@@ -95,6 +95,7 @@ export function noteOnMidiEvent(
   channel: number,
   noteNumber: number,
   velocity: number,
+  lightChannels: number[]
 ): NoteOnEvent {
   return {
     deltaTime,
@@ -103,6 +104,7 @@ export function noteOnMidiEvent(
     channel,
     noteNumber,
     velocity,
+    lightChannels
   }
 }
 
@@ -110,7 +112,8 @@ export function noteOffMidiEvent(
   deltaTime: number,
   channel: number,
   noteNumber: number,
-  velocity: number = 0,
+  lightChannels: number[],
+  velocity: number = 0
 ): NoteOffEvent {
   return {
     deltaTime,
@@ -119,6 +122,7 @@ export function noteOffMidiEvent(
     channel,
     noteNumber,
     velocity,
+    lightChannels,
   }
 }
 

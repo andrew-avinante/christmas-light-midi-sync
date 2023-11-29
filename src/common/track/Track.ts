@@ -16,6 +16,8 @@ import {
   setTempoMidiEvent,
   trackNameMidiEvent,
 } from "../midi/MidiEvent"
+import { TrackColor } from "./TrackColor"
+import { TrackEvent, TrackEventOf } from "./TrackEvent"
 import { isControllerEventWithType, isNoteEvent } from "./identify"
 import {
   getLast,
@@ -28,9 +30,7 @@ import {
   getVolume,
   isTickBefore,
 } from "./selector"
-import { isSignalTrackColorEvent, SignalTrackColorEvent } from "./signalEvents"
-import { TrackColor } from "./TrackColor"
-import { TrackEvent, TrackEventOf } from "./TrackEvent"
+import { SignalTrackColorEvent, isSignalTrackColorEvent } from "./signalEvents"
 import { validateMidiEvent } from "./validate"
 
 export default class Track {
@@ -38,9 +38,74 @@ export default class Track {
   channel: number | undefined = undefined
 
   private lastEventId = 0
+  private lastGroupId = 0
 
   getEventById = (id: number): TrackEvent | undefined =>
     this.events.find((e) => e.id === id)
+
+  getNewGroupId = (): number => {
+    return this.lastGroupId++
+  }
+
+  getGroupByGroupId = (groupId: number): TrackEvent[] => {
+    let result: TrackEvent[] = [];
+    for(let i = 0; i < this.events.length; i ++) {
+      const e = this.events[i]
+      if("groupId" in e) {
+        if (e !== undefined && e.groupId == groupId) {
+          result.push(e)
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // getEventByAttributes = (ticks: number, note: number, channel: number): TrackEvent | undefined => {
+  //   this.events.find((e) => {
+  //     if("subtype" in e && e.subtype == "note") {
+  //       e.tick
+  //     }
+  //   });
+  // }
+
+  applyGroup = (groupId: number): TrackEvent[][] => {
+    const group = this.getGroupByGroupId(groupId);
+    const matches: TrackEvent[][] = [];
+    let currentMatch: TrackEvent[] = [];
+    let groupIndex = 0;
+
+    for(let i = 0; i < this.events.length; i++) {
+      if(groupIndex === group.length) {
+        matches.push(currentMatch);
+        currentMatch = [];
+        groupIndex = 0;
+    } 
+
+      const e = this.events[i];
+      const g = group[groupIndex];
+
+      if(e == undefined) {
+        continue;
+      }
+      
+        if("subtype" in e && e.subtype == "note" && "subtype" in g && g.subtype == "note") {
+          if (groupIndex < group.length && g.noteNumber == e.noteNumber) {
+            currentMatch.push(e)
+            groupIndex++;
+          } else {
+            groupIndex = 0;
+            currentMatch = [];
+          }
+        }
+      }
+
+    if(currentMatch.length === group.length) {
+      matches.push(currentMatch);
+    }
+
+    return matches;
+  }
 
   constructor() {
     makeObservable(this, {

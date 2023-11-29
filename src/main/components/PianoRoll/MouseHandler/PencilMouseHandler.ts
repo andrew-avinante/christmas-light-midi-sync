@@ -1,5 +1,5 @@
 import { IPoint, pointAdd } from "../../../../common/geometry"
-import { isNoteEvent, NoteEvent } from "../../../../common/track"
+import { NoteEvent, isNoteEvent } from "../../../../common/track"
 import {
   addNoteToSelection,
   createNote,
@@ -58,7 +58,6 @@ export const getPencilActionForMouseDown =
             return selectNoteAction
           }
         }
-
         return createNoteAction
       }
       case 2:

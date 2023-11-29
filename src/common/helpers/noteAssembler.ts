@@ -40,6 +40,8 @@ export function assemble<T extends {}>(
               id: -1,
               tick: noteOn.tick,
               duration: e.tick - noteOn.tick,
+              lightChannels: [],
+              groupId: -1
             }
             result.push(note)
           }
@@ -68,8 +70,8 @@ export function deassemble<T extends {}>(
 ): (T | TickNoteOnEvent | TickNoteOffEvent)[] {
   if ("subtype" in e && e.subtype === "note") {
     const channel = (e as any)["channel"] ?? -1
-    const noteOn = noteOnMidiEvent(0, channel, e.noteNumber, e.velocity)
-    const noteOff = noteOffMidiEvent(0, channel, e.noteNumber)
+    const noteOn = noteOnMidiEvent(0, channel, e.noteNumber, e.velocity, e.lightChannels)
+    const noteOff = noteOffMidiEvent(0, channel, e.noteNumber, e.lightChannels)
     return [
       { ...noteOn, tick: e.tick },
       { ...noteOff, tick: e.tick + e.duration },

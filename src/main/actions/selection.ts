@@ -17,7 +17,7 @@ import {
 import clipboard from "../services/Clipboard"
 import RootStore from "../stores/RootStore"
 import { pushHistory } from "./history"
-import { transposeNotes } from "./song"
+import { changeGroup, changelightChannels, transposeNotes } from "./song"
 
 function eventsInSelection(events: TrackEvent[], selection: Selection) {
   const selectionRect = {
@@ -93,6 +93,32 @@ export const transposeSelection =
     }
 
     transposeNotes(rootStore)(deltaPitch, {
+      [selectedTrackId]: selectedNoteIds,
+    })
+  }
+
+export const applylightChannelsToSelection =
+  (rootStore: RootStore) => (lightChannels: number[]) => {
+    const {
+      pianoRollStore: { selectedTrackId, selectedNoteIds }
+    } = rootStore
+
+    pushHistory(rootStore)()
+
+    changelightChannels(rootStore)(lightChannels, {
+      [selectedTrackId]: selectedNoteIds,
+    })
+  }
+
+ export const applyGroup =
+  (rootStore: RootStore) => () => {
+    const {
+      pianoRollStore: { selectedTrackId, selectedNoteIds }
+    } = rootStore
+
+    pushHistory(rootStore)()
+
+    changeGroup(rootStore)({
       [selectedTrackId]: selectedNoteIds,
     })
   }

@@ -14,6 +14,8 @@ describe("Track", () => {
       tick: 123,
       velocity: 100,
       noteNumber: 100,
+      lightChannels: [],
+      groupId: -1
     })
     const s = serialize(track)
     const t = deserialize(Track, s)
@@ -31,6 +33,8 @@ describe("Track", () => {
       tick: 123,
       velocity: 100,
       noteNumber: 100,
+      lightChannels: [],
+      groupId: -1
     })
     expect(track.endOfTrack).toBe(243)
     track.removeEvent(noteEvent.id)

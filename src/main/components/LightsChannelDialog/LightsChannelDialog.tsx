@@ -1,4 +1,4 @@
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { Button, PrimaryButton } from "../../../components/Button"
 import { Checkbox } from "../../../components/Checkbox"
 import {
@@ -10,7 +10,8 @@ import {
 import { Localized } from "../../../components/Localized"
 
 export interface LightsChannelDialogProps {
-  open: boolean
+  open: boolean,
+  selectedChannels: number[],
   onClickOK: (value: number[]) => void
   onClose: () => void
 }
@@ -29,6 +30,7 @@ const CHANNELS = [
 ]
 
 export const LightsChannelDialog: FC<LightsChannelDialogProps> = ({
+  selectedChannels,
   open,
   onClickOK,
   onClose,
@@ -37,12 +39,16 @@ export const LightsChannelDialog: FC<LightsChannelDialogProps> = ({
     CHANNELS.map(key => [key, false])
   ))
 
-  // reset on open
-  // useEffect(() => {
-  //   if (open) {
-  //     setInput("")
-  //   }
-  // }, [open])
+  useEffect(() => {
+    if (open) {
+      setChannels(prevChannels => {
+        const updatedChannels = Object.fromEntries(
+          CHANNELS.map((key, index) => [key, selectedChannels.includes(index)])
+        );
+        return { ...prevChannels, ...updatedChannels };
+      });
+    }
+  }, [open]);
 
   const _onClickOK = () => {
     let resultArray: number[] = []

@@ -21,11 +21,20 @@ import {
   toTrackEvents,
 } from "../helpers/toTrackEvents"
 import Song from "../song"
-import Track, { AnyEventFeature } from "../track"
+import Track, { AnyEventFeature, NoteEvent, isNoteEvent } from "../track"
 import { createCommand } from "./Command"
 
 interface Times {
   [key: string]: number;
+}
+
+export interface SerializedNote {
+  duration: number,
+  id: number,
+  lightChannels: number[],
+  noteNumber: number,
+  tick: number,
+  velocity: number
 }
 
 const CHANNELS = [
@@ -48,7 +57,7 @@ const trackFromMidiEvents = (events: AnyEvent[]): Track => {
   if (channel !== undefined) {
     track.channel = channel
   }
-  
+
   track.addEvents(toTrackEvents(events))
 
   return track
@@ -77,6 +86,36 @@ const tracksFromFormat0Events = (events: AnyEvent[]): Track[] => {
     track.addEvents(trackEvents)
   }
   return tracks
+}
+
+export const applyLightChannels = (song: Song, data: SerializedNote[][]) => {
+  for (let trackId = 0; trackId < data.length; trackId++) {
+    const track = song.getTrack(trackId)
+    if (track === undefined) {
+      continue
+    }
+
+    track.updateEvents(
+      track.events.map(
+        (e) => {
+          if(!isNoteEvent(e)) {
+            return null
+          }
+
+          const note = data[trackId].find((d) => d.duration == e.duration && d.noteNumber == e.noteNumber && d.tick == e.tick && d.velocity == e.velocity)
+
+          if(!note) {
+            return null
+          }
+
+          return {
+            id: e.id,
+            lightChannels: note.lightChannels
+          }
+        }
+      ).filter(isNotNull)
+    )
+  }
 }
 
 const findChannel = (events: AnyEvent[]) => {
@@ -185,6 +224,27 @@ export function songToMidiEvents(song: Song): AnyEvent[][] {
   })
 }
 
+export function serializeNoteLightEvents(song: Song): SerializedNote[][] {
+  const tracks = toJS(song.tracks)
+  return tracks.map((t) => {
+    return t.events.filter(e => 
+      isNoteEvent(e) && e.lightChannels.length > 0
+    ).map(e => 
+      {
+        const note = e as NoteEvent
+        const result: SerializedNote = {
+          duration: note.duration,
+          id: note.id,
+          lightChannels: note.lightChannels,
+          noteNumber: note.noteNumber,
+          tick: note.tick,
+          velocity: note.velocity
+        }
+        return result;
+      })
+  })
+}
+
 export function songToMidi(song: Song) {
   const rawTracks = songToMidiEvents(song)
   return writeMidiFile(rawTracks, song.timebase)
@@ -192,9 +252,10 @@ export function songToMidi(song: Song) {
 
 export function downloadSongAsMidi(song: Song) {
   const bytes = songToMidi(song)
-  songToLights(song)
-  const blob = new Blob([bytes], { type: "application/octet-stream" })
-  downloadBlob(blob, song.filepath.length > 0 ? song.filepath : "no name.mid")
+  const { lightSequence, noteEvents} = songToLights(song)
+  downloadBlob(new Blob([bytes], { type: "application/octet-stream" }), song.filepath.length > 0 ? song.filepath : "no name.mid")
+  downloadBlob(new Blob([JSON.stringify(lightSequence)], { type: "application/json" }), song.filepath.length > 0 ? `${song.filepath}.sequence.json` : "no name.json")
+  downloadBlob(new Blob([JSON.stringify(noteEvents)], { type: "application/json" }), song.filepath.length > 0 ? `${song.filepath}.json` : "no name.json")
 }
 
 export function songToLights(song: Song) {
@@ -251,7 +312,10 @@ export function songToLights(song: Song) {
     })
   }
 
-  console.log(result);
+  return {
+    lightSequence: result,
+    noteEvents: serializeNoteLightEvents(song)
+  }
 }
 
 function rectifyEvents(rawTracks: AnyEvent[][]): AnyEvent[]{

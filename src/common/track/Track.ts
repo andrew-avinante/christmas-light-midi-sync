@@ -73,14 +73,23 @@ export default class Track {
     const group = this.getGroupByGroupId(groupId);
     const matches: TrackEvent[][] = [];
     let currentMatch: TrackEvent[] = [];
+    let distances = [];
     let groupIndex = 0;
+
+    for(let i = 1; i < group.length; i++) {
+      const current = group[i]
+      const previous = group[i - 1]
+      if("subtype" in current && current.subtype == "note" && "subtype" in previous && previous.subtype == "note") {
+        distances.push(current.tick - previous.tick)
+      }
+    }
 
     for(let i = 0; i < this.events.length; i++) {
       if(groupIndex === group.length) {
         matches.push(currentMatch);
         currentMatch = [];
         groupIndex = 0;
-    } 
+      } 
 
       const e = this.events[i];
       const g = group[groupIndex];
@@ -90,12 +99,26 @@ export default class Track {
       }
       
         if("subtype" in e && e.subtype == "note" && "subtype" in g && g.subtype == "note") {
-          if (groupIndex < group.length && g.noteNumber == e.noteNumber) {
-            currentMatch.push(e)
-            groupIndex++;
-          } else {
-            groupIndex = 0;
-            currentMatch = [];
+          const upperDurationTolerance = g.duration * 1.25
+          const lowerDurationTolerance = g.duration * 0.75
+          console.log(lowerDurationTolerance, e.duration, upperDurationTolerance)
+          if (groupIndex < group.length && g.noteNumber == e.noteNumber && lowerDurationTolerance <= e.duration && e.duration <= upperDurationTolerance) {
+            if(groupIndex == 0) {
+              currentMatch.push(e)
+              groupIndex++;
+            } else {
+              const previous = currentMatch[groupIndex - 1]
+              const lowerTolerance = distances[groupIndex - 1] - 100
+              const upperTolerance = distances[groupIndex - 1] + 100
+              console.log(lowerTolerance, e.tick - previous.tick, upperTolerance)
+              if("subtype" in previous && previous.subtype == "note" && lowerTolerance <= e.tick - previous.tick && e.tick - previous.tick <= upperTolerance) {
+                currentMatch.push(e)
+                groupIndex++
+              } else {
+                groupIndex = 0;
+                currentMatch = [];
+              }
+            }
           }
         }
       }
@@ -156,6 +179,18 @@ export default class Track {
       this.sortByTick()
     }
     return result
+  }
+
+  loadLightChannels<T extends TrackEvent>(events: Partial<T>[]) {
+    transaction(() => {
+      events.forEach((event) => {
+        if (event.id === undefined) {
+          return
+        }
+        this._updateEvent(event.id, event)
+      })
+    })
+    this.sortByTick()
   }
 
   updateEvents<T extends TrackEvent>(events: Partial<T>[]) {

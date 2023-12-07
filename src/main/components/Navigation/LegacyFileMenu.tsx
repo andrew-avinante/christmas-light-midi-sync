@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite"
 import { ChangeEvent, FC } from "react"
 import { Localized } from "../../../components/Localized"
 import { MenuDivider, MenuItem } from "../../../components/Menu"
-import { createSong, openSong, saveSong } from "../../actions"
+import { createSong, openSong, openSongLightFile, saveSong } from "../../actions"
 import { useLocalization } from "../../hooks/useLocalization"
 import { useStores } from "../../hooks/useStores"
 import { useToast } from "../../hooks/useToast"
@@ -13,19 +13,21 @@ export const FileInput: FC<
   React.PropsWithChildren<{
     onChange: (e: ChangeEvent<HTMLInputElement>) => void
     accept?: string
+    id?: string
   }>
-> = ({ onChange, children, accept }) => (
+> = ({ onChange, children, accept, id = fileInputID }) => (
   <>
-    <input
-      accept={accept}
-      style={{ display: "none" }}
-      id={fileInputID}
-      type="file"
-      onChange={onChange}
-    />
-    <label htmlFor={fileInputID}>{children}</label>
-  </>
+  <input
+    accept={accept}
+    style={{ display: "none" }}
+    id={id}
+    type="file"
+    onChange={onChange}
+  />
+  <label htmlFor={id}>{children}</label>
+</>
 )
+
 
 export const LegacyFileMenu: FC<{ close: () => void }> = observer(
   ({ close }) => {
@@ -53,6 +55,15 @@ export const LegacyFileMenu: FC<{ close: () => void }> = observer(
       }
     }
 
+    const onClickOpenLights = async (e: ChangeEvent<HTMLInputElement>) => {
+      close()
+      try {
+        await openSongLightFile(rootStore)(e.currentTarget)
+      } catch (e) {
+        toast.error((e as Error).message)
+      }
+    }
+
     const onClickSave = () => {
       close()
       saveSong(rootStore)()
@@ -69,6 +80,12 @@ export const LegacyFileMenu: FC<{ close: () => void }> = observer(
         <FileInput onChange={onClickOpen} accept="audio/midi">
           <MenuItem>
             <Localized default="Open">open-song</Localized>
+          </MenuItem>
+        </FileInput>
+
+        <FileInput onChange={onClickOpenLights} accept=".json" id={"openLightNotes"}>
+          <MenuItem>
+            <Localized default="Open Light Notes">open-song</Localized>
           </MenuItem>
         </FileInput>
 

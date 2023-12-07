@@ -1,4 +1,5 @@
-import { songFromMidi, songToLights, songToMidi } from "../../common/midi/midiConversion"
+import { applyLightChannels, songFromMidi, songToLights, songToMidi } from "../../common/midi/midiConversion"
+import Song from "../../common/song/Song"
 import { writeFile } from "../services/fs-helper"
 import RootStore from "../stores/RootStore"
 import { setSong } from "./song"
@@ -50,6 +51,23 @@ export const songFromFile = async (file: File) => {
   song.filepath = file.name
   song.isSaved = true
   return song
+}
+
+export const mapLightFromFile = async (song: Song, file: File) => {
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    if (event.target) {
+      const jsonData = JSON.parse(event.target.result as string);
+      applyLightChannels(song, jsonData)
+    }
+  };
+
+  reader.onerror = (event) => {
+    console.error('Error reading file:', event.target?.error);
+  };
+
+  reader.readAsText(file)
 }
 
 export const saveFile = async (rootStore: RootStore) => {

@@ -4,7 +4,7 @@ import Song, { emptySong } from "../../common/song"
 import { emptyTrack, isNoteEvent } from "../../common/track"
 import { clampNoteNumber } from "../../common/transform/NotePoint"
 import RootStore from "../stores/RootStore"
-import { songFromFile } from "./file"
+import { mapLightFromFile, songFromFile } from "./file"
 
 const openSongFile = async (input: HTMLInputElement): Promise<Song | null> => {
   if (input.files === null || input.files.length === 0) {
@@ -13,6 +13,16 @@ const openSongFile = async (input: HTMLInputElement): Promise<Song | null> => {
 
   const file = input.files[0]
   return await songFromFile(file)
+}
+
+export const openSongLightFile = (rootStore: RootStore) => async (input: HTMLInputElement) => {
+  const {song} = rootStore
+  if (input.files === null || input.files.length === 0) {
+    return Promise.resolve(null)
+  }
+
+  const file = input.files[0]
+  mapLightFromFile(song, file)
 }
 
 export const setSong = (rootStore: RootStore) => (song: Song) => {
@@ -211,9 +221,10 @@ export const transposeNotes =
             const e = groups[j][i];
             const o = original[i];
             if (isNoteEvent(e) && isNoteEvent(o)) {
-              e.lightChannels = o.lightChannels;
+              track.updateEvent(e.id, {
+                lightChannels: o.lightChannels
+              })
             }
-            groups[j][i] = e;
           }
         }
 
